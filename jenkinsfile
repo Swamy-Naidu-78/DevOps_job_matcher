@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    environment {
+        VENV_DIR = 'venv'
+        PYTHON_SCRIPT = 'jobmatcher.py'
+    }
+
+    triggers {
+        cron('H * * * *') // Every hour
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Swamy-Naidu-78/DevOps_Job_Matcher.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    python3 -m venv $VENV_DIR
+                    . $VENV_DIR/bin/activate
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Script') {
+            steps {
+                sh '''
+                    . $VENV_DIR/bin/activate
+                    python $PYTHON_SCRIPT
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            mail to: 'swamy78.awsdevops@gmail.com',
+                 subject: "🔴 Job Matcher Jenkins Job Failed",
+                 body: "The job failed. Check Jenkins logs.\nURL: ${env.BUILD_URL}"
+        }
+    }
+}
